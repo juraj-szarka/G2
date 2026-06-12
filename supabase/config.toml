@@ -1,0 +1,5 @@
+project_id = "gen2"
+
+[functions.analyze-meal]
+verify_jwt = true
+
