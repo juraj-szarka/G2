@@ -23,7 +23,7 @@ export default function NutritionScreen() {
     try {
       setLogs(await listTodayNutrition());
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : "Unable to load meals.");
+      setError(String((caught as { message?: string })?.message ?? "Unable to load meals."));
     }
   }, []);
 
@@ -45,7 +45,7 @@ export default function NutritionScreen() {
       });
       await load();
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : "Unable to analyze meal.");
+      setError(String((caught as { message?: string })?.message ?? "Unable to analyze meal."));
     } finally {
       setLoading(false);
     }

@@ -124,6 +124,7 @@ export type Database = {
           target_count: number;
           increment_step: number;
           current_count: number;
+          score_per_unit: number;
           created_at: string;
           updated_at: string;
         };
@@ -135,6 +136,7 @@ export type Database = {
           target_count?: number;
           increment_step?: number;
           current_count?: number;
+          score_per_unit?: number;
         };
         Update: Partial<Database["public"]["Tables"]["manual_workouts"]["Insert"]>;
         Relationships: [];

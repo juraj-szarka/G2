@@ -28,9 +28,9 @@ export default function TabsLayout() {
         }}
       />
       <Tabs.Screen
-        name="counter"
+        name="workout"
         options={{
-          title: "Counter",
+          title: "Workout",
           tabBarIcon: ({ color, size }) => <Dumbbell color={color} size={size} />
         }}
       />

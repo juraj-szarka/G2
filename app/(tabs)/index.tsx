@@ -1,21 +1,23 @@
 import { useCallback, useState } from "react";
 import { Text, View } from "react-native";
 import { useFocusEffect } from "expo-router";
-import { Activity, Moon, RefreshCw, Target, Utensils } from "lucide-react-native";
+import { Activity, Dumbbell, Moon, RefreshCw, Target, Utensils } from "lucide-react-native";
 
 import { MetricCard } from "@/components/MetricCard";
 import { PrimaryButton } from "@/components/PrimaryButton";
 import { ProgressBar } from "@/components/ProgressBar";
 import { Screen } from "@/components/Screen";
 import { colors } from "@/constants/theme";
-import { loadTodayDailyLog } from "@/services/logs";
+import { listManualWorkouts, loadTodayDailyLog } from "@/services/logs";
 import { useAuthStore } from "@/store/authStore";
 import { useHealthStore } from "@/store/healthStore";
 import type { DailyLog } from "@/types/database";
+import type { ManualWorkout } from "@/types/database";
 import { formatMinutes } from "@/utils/date";
 
 export default function DashboardScreen() {
   const [log, setLog] = useState<DailyLog | null>(null);
+  const [manualWorkouts, setManualWorkouts] = useState<ManualWorkout[]>([]);
   const [refreshing, setRefreshing] = useState(false);
   const profile = useAuthStore((state) => state.profile);
   const refreshProfile = useAuthStore((state) => state.refreshProfile);
@@ -26,8 +28,9 @@ export default function DashboardScreen() {
   const load = useCallback(async () => {
     setRefreshing(true);
     try {
-      const data = await loadTodayDailyLog();
+      const [data, mw] = await Promise.all([loadTodayDailyLog(), listManualWorkouts()]);
       setLog(data);
+      setManualWorkouts(mw);
       await refreshProfile();
     } finally {
       setRefreshing(false);
@@ -44,6 +47,11 @@ export default function DashboardScreen() {
     await syncHealth();
     await load();
   }
+
+  const manualScore = manualWorkouts.reduce(
+    (sum, w) => sum + Math.round(w.current_count * w.score_per_unit * 10) / 10,
+    0,
+  );
 
   const workoutMinutes = log?.workout_minutes ?? 0;
   const workoutTarget = log?.workout_target_minutes ?? profile?.target_workout_minutes ?? 45;
@@ -84,6 +92,15 @@ export default function DashboardScreen() {
             value={log?.exercise_score ?? profile?.current_exercise_score ?? 0}
           />
         </View>
+
+        {manualScore > 0 ? (
+          <MetricCard
+            detail="From manual activities"
+            icon={<Dumbbell color={colors.success} size={20} />}
+            label="Workout points"
+            value={manualScore}
+          />
+        ) : null}
 
         <View className="gap-5 rounded-md border border-line bg-white p-5">
           <ProgressBar label="Workout" target={workoutTarget} unit="m" value={workoutMinutes} />

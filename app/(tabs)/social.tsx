@@ -33,7 +33,7 @@ export default function SocialScreen() {
       setProfile(profileData);
       setFriendships(friendshipData);
     } catch (error) {
-      setNotice(error instanceof Error ? error.message : "Unable to load social data.");
+      setNotice(String((error as { message?: string })?.message ?? "Unable to load social data."));
     } finally {
       setLoading(false);
     }
@@ -63,7 +63,7 @@ export default function SocialScreen() {
       setNotice("Friend request sent.");
       await load();
     } catch (error) {
-      setNotice(error instanceof Error ? error.message : "Unable to send request.");
+      setNotice(String((error as { message?: string })?.message ?? "Unable to send request."));
     } finally {
       setLoading(false);
     }

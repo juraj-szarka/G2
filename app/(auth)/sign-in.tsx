@@ -30,7 +30,7 @@ export default function SignInScreen() {
         await signUp(email.trim(), password, displayName.trim() || "Gen2 athlete");
       }
     } catch (error) {
-      setLocalError(error instanceof Error ? error.message : "Authentication failed.");
+      setLocalError(String((error as { message?: string })?.message ?? "Authentication failed."));
     }
   }
 

@@ -20,7 +20,7 @@ export default function FriendInviteScreen() {
 
     createFriendshipByCode(code)
       .then(() => setDone(true))
-      .catch((caught) => setError(caught instanceof Error ? caught.message : "Unable to use invite."));
+      .catch((caught) => setError(String((caught as { message?: string })?.message ?? "Unable to use invite.")));
   }, [code, session]);
 
   if (!session) {

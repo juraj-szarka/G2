@@ -64,7 +64,23 @@ export async function upsertDailyLogFromHealth(summary: HealthSummary) {
   return data;
 }
 
-export async function getOrCreateManualWorkout() {
+export async function listManualWorkouts() {
+  const userId = await requireUserId();
+  const { data, error } = await supabase
+    .from("manual_workouts")
+    .select("*")
+    .eq("user_id", userId)
+    .eq("log_date", todayISO())
+    .order("created_at", { ascending: true });
+
+  if (error) {
+    throw error;
+  }
+
+  return data ?? [];
+}
+
+export async function getOrCreateManualWorkout(name = "Push-ups") {
   const userId = await requireUserId();
   const logDate = todayISO();
   const { data: existing, error: readError } = await supabase
@@ -72,7 +88,7 @@ export async function getOrCreateManualWorkout() {
     .select("*")
     .eq("user_id", userId)
     .eq("log_date", logDate)
-    .eq("name", "Push-ups")
+    .eq("name", name)
     .maybeSingle();
 
   if (readError) {
@@ -85,7 +101,7 @@ export async function getOrCreateManualWorkout() {
 
   const { data, error } = await supabase
     .from("manual_workouts")
-    .insert({ user_id: userId, log_date: logDate, name: "Push-ups", target_count: 200, increment_step: 10 })
+    .insert({ user_id: userId, log_date: logDate, name, target_count: 200, increment_step: 10 })
     .select()
     .single();
 
@@ -94,6 +110,90 @@ export async function getOrCreateManualWorkout() {
   }
 
   return data;
+}
+
+export async function createManualWorkout(
+  name: string,
+  targetCount = 200,
+  incrementStep = 10,
+  scorePerUnit = 0.1,
+) {
+  const userId = await requireUserId();
+  const { data, error } = await supabase
+    .from("manual_workouts")
+    .insert({
+      user_id: userId,
+      log_date: todayISO(),
+      name,
+      target_count: targetCount,
+      increment_step: incrementStep,
+      score_per_unit: scorePerUnit,
+    })
+    .select()
+    .single();
+
+  if (error) {
+    throw error;
+  }
+
+  return data;
+}
+
+export type WorkoutDay = {
+  date: string;
+  activities: Array<{
+    name: string;
+    count: number;
+    score_per_unit: number;
+    score: number;
+    unit: string;
+  }>;
+  totalScore: number;
+};
+
+export async function getWorkoutHistory(days = 7) {
+  const userId = await requireUserId();
+  const dates: string[] = [];
+  const now = new Date();
+  for (let i = days - 1; i >= 0; i--) {
+    const d = new Date(now);
+    d.setDate(d.getDate() - i);
+    dates.push(todayISO(d));
+  }
+
+  const { data, error } = await supabase
+    .from("manual_workouts")
+    .select("*")
+    .eq("user_id", userId)
+    .gte("log_date", dates[0])
+    .lte("log_date", dates[dates.length - 1])
+    .order("log_date", { ascending: true })
+    .order("created_at", { ascending: true });
+
+  if (error) {
+    throw error;
+  }
+
+  const byDate = new Map<string, WorkoutDay>();
+  for (const date of dates) {
+    byDate.set(date, { date, activities: [], totalScore: 0 });
+  }
+
+  for (const w of data ?? []) {
+    const entry = byDate.get(w.log_date);
+    if (!entry) continue;
+    const score = Math.round(w.current_count * w.score_per_unit * 10) / 10;
+    entry.activities.push({
+      name: w.name,
+      count: w.current_count,
+      score_per_unit: w.score_per_unit,
+      score,
+      unit: w.unit,
+    });
+    entry.totalScore = Math.round((entry.totalScore + score) * 10) / 10;
+  }
+
+  return Array.from(byDate.values());
 }
 
 export async function updateManualWorkoutCount(workout: ManualWorkout, delta: number) {

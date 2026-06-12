@@ -23,7 +23,7 @@ export default function ProfileScreen() {
 
     loadProfile(id)
       .then(setProfile)
-      .catch((caught) => setError(caught instanceof Error ? caught.message : "Unable to load profile."));
+      .catch((caught) => setError(String((caught as { message?: string })?.message ?? "Unable to load profile.")));
   }, [id]);
 
   if (!profile && !error) {
