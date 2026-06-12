@@ -24,6 +24,7 @@ export type Database = {
           current_health_score: number;
           current_exercise_score: number;
           streak_days: number;
+          workout_points_goal: number;
           created_at: string;
           updated_at: string;
         };
@@ -44,6 +45,7 @@ export type Database = {
           current_health_score?: number;
           current_exercise_score?: number;
           streak_days?: number;
+          workout_points_goal?: number;
         };
         Update: Partial<Database["public"]["Tables"]["profiles"]["Insert"]>;
         Relationships: [];
@@ -89,6 +91,7 @@ export type Database = {
           target_fat: number;
           health_score: number;
           exercise_score: number;
+          manual_workout_points: number;
           synced_at: string | null;
           created_at: string;
           updated_at: string;
@@ -109,6 +112,7 @@ export type Database = {
           target_protein?: number;
           target_carbs?: number;
           target_fat?: number;
+          manual_workout_points?: number;
           synced_at?: string | null;
         };
         Update: Partial<Database["public"]["Tables"]["daily_logs"]["Insert"]>;
@@ -178,6 +182,13 @@ export type Database = {
           p_invite_code: string;
         };
         Returns: string;
+      };
+      sync_manual_workout_points: {
+        Args: {
+          p_user_id: string;
+          p_log_date: string;
+        };
+        Returns: undefined;
       };
     };
     CompositeTypes: Record<string, never>;

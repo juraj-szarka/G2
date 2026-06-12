@@ -1,7 +1,7 @@
 import { useCallback, useRef, useState } from "react";
-import { Text, TextInput, TouchableOpacity, View } from "react-native";
-import { useFocusEffect } from "expo-router";
-import { ArrowLeft, ChevronRight, Minus, Plus } from "lucide-react-native";
+import { Alert, Text, TextInput, TouchableOpacity, View } from "react-native";
+import { router, useFocusEffect } from "expo-router";
+import { ArrowLeft, ChevronRight, Minus, Plus, Trash2 } from "lucide-react-native";
 
 import { MetricCard } from "@/components/MetricCard";
 import { PrimaryButton } from "@/components/PrimaryButton";
@@ -11,43 +11,22 @@ import { WorkoutChart } from "@/components/WorkoutChart";
 import { colors } from "@/constants/theme";
 import {
   createManualWorkout,
-  getWorkoutHistory,
+  deleteManualWorkout,
   listManualWorkouts,
+  syncManualWorkoutPoints,
   updateManualWorkoutCount,
 } from "@/services/logs";
+import { getWorkoutHistory } from "@/services/logs";
 import type { ManualWorkout } from "@/types/database";
 import type { WorkoutDay } from "@/services/logs";
-
-const SCORE_PRESETS: Record<string, number> = {
-  "Push-ups": 0.1,
-  "Pull-ups": 0.5,
-  "Squats": 0.15,
-  "Sit-ups": 0.1,
-  "Run": 5,
-  "Running": 5,
-  "Walk": 2,
-  "Walking": 2,
-  "Swim": 3,
-  "Swimming": 3,
-  "Cycle": 2,
-  "Cycling": 2,
-};
-
-function guessScorePerUnit(name: string) {
-  return SCORE_PRESETS[name] ?? 0.2;
-}
 
 export default function WorkoutScreen() {
   const [workouts, setWorkouts] = useState<ManualWorkout[]>([]);
   const [selected, setSelected] = useState<ManualWorkout | null>(null);
   const [history, setHistory] = useState<WorkoutDay[]>([]);
-  const [historyDays, setHistoryDays] = useState(7);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [customAmount, setCustomAmount] = useState("");
-  const [newName, setNewName] = useState("");
-  const [newScore, setNewScore] = useState("");
-  const [showAddForm, setShowAddForm] = useState(false);
   const inputRef = useRef<TextInput>(null);
 
   const load = useCallback(async () => {
@@ -56,7 +35,7 @@ export default function WorkoutScreen() {
     try {
       const [wData, hData] = await Promise.all([
         listManualWorkouts(),
-        getWorkoutHistory(historyDays),
+        getWorkoutHistory(7),
       ]);
       setWorkouts(wData);
       setHistory(hData);
@@ -65,13 +44,19 @@ export default function WorkoutScreen() {
     } finally {
       setLoading(false);
     }
-  }, [historyDays]);
+  }, []);
 
   useFocusEffect(
     useCallback(() => {
       load();
     }, [load])
   );
+
+  async function doSync() {
+    try {
+      await syncManualWorkoutPoints();
+    } catch {}
+  }
 
   async function increment(delta: number) {
     if (!selected) return;
@@ -83,6 +68,7 @@ export default function WorkoutScreen() {
       const updated = await updateManualWorkoutCount(selected, delta);
       setSelected(updated);
       setWorkouts((prev) => prev.map((w) => (w.id === updated.id ? updated : w)));
+      await doSync();
     } catch (caught) {
       setSelected(previous);
       setWorkouts((prev) => prev.map((w) => (w.id === previous.id ? previous : w)));
@@ -97,20 +83,25 @@ export default function WorkoutScreen() {
     increment(amount);
   }
 
-  async function addActivity() {
-    const name = newName.trim();
-    if (!name) return;
-    const scorePerUnit = parseFloat(newScore) || guessScorePerUnit(name);
-    try {
-      const created = await createManualWorkout(name, 200, 10, scorePerUnit);
-      setWorkouts((prev) => [...prev, created]);
-      setNewName("");
-      setNewScore("");
-      setShowAddForm(false);
-      setSelected(created);
-    } catch (caught) {
-      setError(String((caught as { message?: string })?.message ?? "Unable to create activity."));
-    }
+  async function removeSelected() {
+    if (!selected) return;
+    Alert.alert("Delete activity", `Remove "${selected.name}" for today?`, [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Delete",
+        style: "destructive",
+        onPress: async () => {
+          try {
+            await deleteManualWorkout(selected.id);
+            setWorkouts((prev) => prev.filter((w) => w.id !== selected.id));
+            setSelected(null);
+            await doSync();
+          } catch (caught) {
+            setError(String((caught as { message?: string })?.message ?? "Unable to delete."));
+          }
+        },
+      },
+    ]);
   }
 
   const totalScore = workouts.reduce((sum, w) => {
@@ -134,12 +125,19 @@ export default function WorkoutScreen() {
             >
               <ArrowLeft color={colors.ink} size={20} />
             </TouchableOpacity>
-            <View>
+            <View className="flex-1">
               <Text className="text-[15px] font-semibold text-muted">Back to list</Text>
               <Text className="text-[12px] text-muted">
-                {selected.score_per_unit} pts / {selected.unit.slice(0, -1) || "unit"}
+                {selected.score_per_unit} pts / {selected.unit}
               </Text>
             </View>
+            <TouchableOpacity
+              activeOpacity={0.7}
+              className="h-10 w-10 items-center justify-center rounded-md bg-red-50"
+              onPress={removeSelected}
+            >
+              <Trash2 color="#DC2626" size={18} />
+            </TouchableOpacity>
           </View>
 
           <MetricCard
@@ -154,10 +152,10 @@ export default function WorkoutScreen() {
 
             <View className="flex-row gap-3">
               <View className="flex-1">
-                <PrimaryButton label="+1" onPress={() => increment(1)} variant="outline" />
+                <PrimaryButton label={`+${selected.increment_step}`} onPress={() => increment(selected.increment_step)} variant="outline" />
               </View>
               <View className="flex-1">
-                <PrimaryButton label="+5" onPress={() => increment(5)} />
+                <PrimaryButton label={`+${selected.increment_step * 5}`} onPress={() => increment(selected.increment_step * 5)} />
               </View>
             </View>
 
@@ -202,14 +200,12 @@ export default function WorkoutScreen() {
 
         <WorkoutChart data={history} />
 
-        {historyDays <= 7 ? (
-          <PrimaryButton
-            icon={<ChevronRight color="white" size={16} />}
-            label="Show more history"
-            onPress={() => setHistoryDays(30)}
-            variant="outline"
-          />
-        ) : null}
+        <PrimaryButton
+          icon={<ChevronRight color="white" size={16} />}
+          label="Show more history"
+          onPress={() => router.navigate("/workout-history")}
+          variant="outline"
+        />
 
         {workouts.map((w) => {
           const wpct = w.target_count > 0
@@ -244,42 +240,15 @@ export default function WorkoutScreen() {
           );
         })}
 
-        {showAddForm ? (
-          <View className="gap-3 rounded-md border border-line bg-white p-5">
-            <TextInput
-              className="h-12 rounded-md border border-line bg-white px-4 text-[16px] text-ink"
-              onChangeText={setNewName}
-              placeholder="Activity name (e.g. Push-ups)"
-              placeholderTextColor="#8B948F"
-              value={newName}
-            />
-            <TextInput
-              className="h-12 rounded-md border border-line bg-white px-4 text-[16px] text-ink"
-              keyboardType="decimal-pad"
-              onChangeText={setNewScore}
-              placeholder={`Score per unit (default: ${guessScorePerUnit(newName || "Push-ups")})`}
-              placeholderTextColor="#8B948F"
-              value={newScore}
-            />
-            <PrimaryButton
-              icon={<Plus color="white" size={18} />}
-              label="Add activity"
-              onPress={addActivity}
-              disabled={!newName.trim()}
-            />
-            <PrimaryButton label="Cancel" onPress={() => setShowAddForm(false)} variant="quiet" />
-          </View>
-        ) : (
-          <PrimaryButton
-            icon={<Plus color="white" size={18} />}
-            label="Add activity"
-            onPress={() => setShowAddForm(true)}
-          />
-        )}
+        <PrimaryButton
+          icon={<Plus color="white" size={18} />}
+          label="Add activity"
+          onPress={() => router.navigate("/add-activity")}
+        />
 
         {workouts.length === 0 && !loading ? (
           <Text className="text-center text-[14px] text-muted">
-            No activities yet. Add one to start tracking.
+            No activities yet. Tap "Add activity" to start tracking.
           </Text>
         ) : null}
 

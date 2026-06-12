@@ -228,6 +228,26 @@ export async function listTodayNutrition() {
   return data;
 }
 
+export async function deleteManualWorkout(id: string) {
+  const { error } = await supabase.from("manual_workouts").delete().eq("id", id);
+
+  if (error) {
+    throw error;
+  }
+}
+
+export async function syncManualWorkoutPoints() {
+  const userId = await requireUserId();
+  const { error } = await supabase.rpc("sync_manual_workout_points", {
+    p_user_id: userId,
+    p_log_date: todayISO(),
+  });
+
+  if (error) {
+    throw error;
+  }
+}
+
 export async function addNutritionLog(input: Omit<NutritionLog, "id" | "created_at" | "updated_at">) {
   const { data, error } = await supabase.from("nutrition_logs").insert(input).select().single();
 

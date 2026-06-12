@@ -48,7 +48,7 @@ export default function DashboardScreen() {
     await load();
   }
 
-  const manualScore = manualWorkouts.reduce(
+  const manualScore = log?.manual_workout_points ?? manualWorkouts.reduce(
     (sum, w) => sum + Math.round(w.current_count * w.score_per_unit * 10) / 10,
     0,
   );
@@ -95,7 +95,7 @@ export default function DashboardScreen() {
 
         {manualScore > 0 ? (
           <MetricCard
-            detail="From manual activities"
+            detail="Included in health score"
             icon={<Dumbbell color={colors.success} size={20} />}
             label="Workout points"
             value={manualScore}

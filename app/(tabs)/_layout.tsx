@@ -1,5 +1,5 @@
 import { Tabs } from "expo-router";
-import { Dumbbell, Home, Users, Utensils } from "lucide-react-native";
+import { Dumbbell, Home, Settings, Users, Utensils } from "lucide-react-native";
 
 import { colors } from "@/constants/theme";
 
@@ -35,6 +35,20 @@ export default function TabsLayout() {
         }}
       />
       <Tabs.Screen
+        name="add-activity"
+        options={{
+          href: null,
+          title: "Add activity"
+        }}
+      />
+      <Tabs.Screen
+        name="workout-history"
+        options={{
+          href: null,
+          title: "Workout history"
+        }}
+      />
+      <Tabs.Screen
         name="nutrition"
         options={{
           title: "Meals",
@@ -46,6 +60,13 @@ export default function TabsLayout() {
         options={{
           title: "Social",
           tabBarIcon: ({ color, size }) => <Users color={color} size={size} />
+        }}
+      />
+      <Tabs.Screen
+        name="settings"
+        options={{
+          title: "Settings",
+          tabBarIcon: ({ color, size }) => <Settings color={color} size={size} />
         }}
       />
     </Tabs>
