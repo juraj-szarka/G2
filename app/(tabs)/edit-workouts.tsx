@@ -5,7 +5,7 @@ import { router } from "expo-router";
 import { ArrowLeft, Check, Trash2 } from "lucide-react-native";
 
 import { PrimaryButton } from "@/components/PrimaryButton";
-import { colors } from "@/constants/theme";
+import { useColors } from "@/hooks/useColors";
 import { ICON_NAMES, resolveIcon } from "@/data/activities";
 import { listUserWorkoutTypes, updateWorkoutType, deleteWorkoutType } from "@/services/logs";
 import type { WorkoutTypeInfo } from "@/services/logs";
@@ -20,6 +20,7 @@ const COLOR_OPTIONS = [
 ];
 
 export default function EditWorkoutsScreen() {
+  const c = useColors();
   const [types, setTypes] = useState<WorkoutTypeInfo[]>([]);
   const [edits, setEdits] = useState<Record<string, { icon_name: string; color: string }>>({});
   const [changed, setChanged] = useState(false);
@@ -85,17 +86,18 @@ export default function EditWorkoutsScreen() {
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-paper" edges={["top"]}>
+    <SafeAreaView className="flex-1" edges={["top"]} style={{ backgroundColor: c.paper }}>
       <View className="px-5 pb-4 pt-2">
         <View className="flex-row items-center gap-3">
           <TouchableOpacity
             activeOpacity={0.7}
-            className="h-10 w-10 items-center justify-center rounded-md bg-[#EEF3EF]"
+            className="h-10 w-10 items-center justify-center rounded-md"
+            style={{ backgroundColor: c.muted + "18" }}
             onPress={() => router.back()}
           >
-            <ArrowLeft color={colors.ink} size={20} />
+            <ArrowLeft color={c.ink} size={20} />
           </TouchableOpacity>
-          <Text className="text-[22px] font-semibold text-ink">Edit workouts</Text>
+          <Text className="text-[22px] font-semibold" style={{ color: c.ink }}>Edit workouts</Text>
         </View>
       </View>
 
@@ -108,7 +110,7 @@ export default function EditWorkoutsScreen() {
             const isEdited = !!edits[type.name];
 
             return (
-              <View key={type.name} className="rounded-md border bg-white p-4" style={{ borderColor: isEdited ? colors.success : colors.line }}>
+              <View key={type.name} className="rounded-md border p-4" style={{ borderColor: isEdited ? c.success : c.line, backgroundColor: c.surface }}>
                 <View className="flex-row items-center gap-3">
                   <TouchableOpacity
                     activeOpacity={0.7}
@@ -123,12 +125,13 @@ export default function EditWorkoutsScreen() {
                     <IconComp color={color} size={20} />
                   </TouchableOpacity>
                   <View className="flex-1">
-                    <Text className="text-[15px] font-semibold text-ink">{type.name}</Text>
-                    <Text className="text-[12px] text-muted">{type.unit}</Text>
+                    <Text className="text-[15px] font-semibold" style={{ color: c.ink }}>{type.name}</Text>
+                    <Text className="text-[12px]" style={{ color: c.muted }}>{type.unit}</Text>
                   </View>
                   <TouchableOpacity
                     activeOpacity={0.7}
-                    className="h-9 w-9 items-center justify-center rounded-md bg-red-50"
+                    className="h-9 w-9 items-center justify-center rounded-md"
+                    style={{ backgroundColor: "#DC2626" + "18" }}
                     onPress={() => confirmDelete(type.name)}
                   >
                     <Trash2 color="#DC2626" size={16} />
@@ -151,7 +154,7 @@ export default function EditWorkoutsScreen() {
           })}
 
           {types.length === 0 ? (
-            <Text className="text-center text-[14px] text-muted">No workout types found.</Text>
+            <Text className="text-center text-[14px]" style={{ color: c.muted }}>No workout types found.</Text>
           ) : null}
 
           {changed ? (

@@ -1,6 +1,8 @@
 import type { ReactNode } from "react";
 import { ActivityIndicator, Text, TouchableOpacity, View } from "react-native";
 
+import { useColors } from "@/hooks/useColors";
+
 type Props = {
   label: string;
   onPress: () => void;
@@ -20,6 +22,7 @@ export function PrimaryButton({
   variant = "primary",
   color
 }: Props) {
+  const c = useColors();
   const base = "h-12 flex-row items-center justify-center rounded-md px-4";
   const bgColor = color && variant === "primary" ? color : undefined;
   const borderColor = color && variant === "outline" ? color : undefined;
@@ -32,21 +35,21 @@ export function PrimaryButton({
       activeOpacity={0.82}
       className={`${base} ${disabled ? "opacity-50" : ""}`}
       style={{
-        backgroundColor: bgColor || (variant === "quiet" ? "#EEF3EF" : variant === "outline" ? "#FFFFFF" : "#00CC00"),
+        backgroundColor: bgColor || (variant === "quiet" ? c.muted + "18" : variant === "outline" ? c.surface : c.success),
         borderWidth: variant === "outline" ? 1 : 0,
-        borderColor: borderColor || (variant === "outline" ? "#E4EBE5" : undefined),
+        borderColor: borderColor || (variant === "outline" ? c.line : undefined),
       }}
       disabled={disabled || loading}
       onPress={onPress}
     >
       {loading ? (
-        <ActivityIndicator color={txtColor ?? (variant === "primary" ? "white" : "#111812")} />
+        <ActivityIndicator color={txtColor ?? (variant === "primary" ? "white" : c.ink)} />
       ) : (
         <View className="flex-row items-center gap-2">
           {icon}
           <Text
             className="text-[15px] font-semibold"
-            style={{ color: txtColor ?? (variant === "primary" ? "white" : "#111812") }}
+            style={{ color: txtColor ?? (variant === "primary" ? "white" : c.ink) }}
           >
             {label}
           </Text>

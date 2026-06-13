@@ -3,11 +3,12 @@ import { ActivityIndicator, Text, View } from "react-native";
 import { Redirect, useLocalSearchParams } from "expo-router";
 
 import { PrimaryButton } from "@/components/PrimaryButton";
-import { colors } from "@/constants/theme";
+import { useColors } from "@/hooks/useColors";
 import { createFriendshipByCode } from "@/services/friends";
 import { useAuthStore } from "@/store/authStore";
 
 export default function FriendInviteScreen() {
+  const c = useColors();
   const { code } = useLocalSearchParams<{ code: string }>();
   const session = useAuthStore((state) => state.session);
   const [done, setDone] = useState(false);
@@ -32,7 +33,7 @@ export default function FriendInviteScreen() {
   }
 
   return (
-    <View className="flex-1 items-center justify-center bg-paper px-6">
+    <View className="flex-1 items-center justify-center px-6" style={{ backgroundColor: c.paper }}>
       {error ? (
         <View className="w-full gap-4">
           <Text className="text-center text-[16px] font-medium text-red-700">{error}</Text>
@@ -40,8 +41,8 @@ export default function FriendInviteScreen() {
         </View>
       ) : (
         <>
-          <ActivityIndicator color={colors.success} />
-          <Text className="mt-4 text-[15px] text-muted">Adding friend...</Text>
+          <ActivityIndicator color={c.success} />
+          <Text className="mt-4 text-[15px]" style={{ color: c.muted }}>Adding friend...</Text>
         </>
       )}
     </View>

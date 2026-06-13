@@ -7,7 +7,7 @@ import { MetricCard } from "@/components/MetricCard";
 import { PrimaryButton } from "@/components/PrimaryButton";
 import { ProgressBar } from "@/components/ProgressBar";
 import { Screen } from "@/components/Screen";
-import { colors } from "@/constants/theme";
+import { useColors } from "@/hooks/useColors";
 import { getWorkoutWeekComparison, listManualWorkouts, loadTodayDailyLog, loadTodaysWorkoutPoints } from "@/services/logs";
 import { useAuthStore } from "@/store/authStore";
 import { useHealthStore } from "@/store/healthStore";
@@ -16,6 +16,7 @@ import type { ManualWorkout } from "@/types/database";
 import { formatMinutes } from "@/utils/date";
 
 export default function DashboardScreen() {
+  const c = useColors();
   const [log, setLog] = useState<DailyLog | null>(null);
   const [manualWorkouts, setManualWorkouts] = useState<ManualWorkout[]>([]);
   const [todaysPoints, setTodaysPoints] = useState(0);
@@ -92,14 +93,14 @@ export default function DashboardScreen() {
           <MetricCard
             accent
             detail="40 training / 40 sleep / 20 macros"
-            icon={<Target color={colors.success} size={20} />}
+            icon={<Target color={c.success} size={20} />}
             label="Health score"
             value={log?.health_score ?? profile?.current_health_score ?? 0}
           />
           <MetricCard
             accent
             detail="Workout target"
-            icon={<Activity color={colors.success} size={20} />}
+            icon={<Activity color={c.success} size={20} />}
             label="Exercise"
             value={log?.exercise_score ?? profile?.current_exercise_score ?? 0}
           />
@@ -109,17 +110,17 @@ export default function DashboardScreen() {
           activeOpacity={0.7}
           onPress={() => router.navigate("/workout")}
         >
-          <View className="overflow-hidden rounded-md" style={{ backgroundColor: colors.successSoft }}>
+          <View className="overflow-hidden rounded-md" style={{ backgroundColor: c.successSoft }}>
             <MetricCard
               detail={`Goal: ${pointsGoal} pts · Included in health score`}
-              icon={<Dumbbell color={colors.success} size={20} />}
+              icon={<Dumbbell color={c.success} size={20} />}
               label="Workout points"
               value={`${manualScore} / ${pointsGoal}`}
             />
           </View>
         </TouchableOpacity>
 
-        <View className="gap-5 rounded-md border border-line bg-white p-5">
+        <View className="gap-5 rounded-md border p-5" style={{ borderColor: c.line, backgroundColor: c.surface }}>
           <ProgressBar label="Workout points" target={pointsGoal} value={manualScore} />
           <ProgressBar label="Sleep" target={sleepTarget} unit="m" value={sleepMinutes} />
           <ProgressBar label="Calories" target={caloriesTarget} value={calories} />
@@ -128,13 +129,13 @@ export default function DashboardScreen() {
         <View className="flex-row gap-3">
           <MetricCard
             detail={formatMinutes(sleepTarget)}
-            icon={<Moon color={colors.muted} size={20} />}
+            icon={<Moon color={c.muted} size={20} />}
             label="Sleep"
             value={formatMinutes(sleepMinutes)}
           />
           <MetricCard
             detail={`${Math.round(log?.protein ?? 0)}g protein`}
-            icon={<Utensils color={colors.muted} size={20} />}
+            icon={<Utensils color={c.muted} size={20} />}
             label="Macros"
             value={`${Math.round(calories)}`}
           />
@@ -153,7 +154,7 @@ export default function DashboardScreen() {
             <View className="flex-1">
               <MetricCard
                 detail={trendPct >= 0 ? "vs last week" : "vs last week"}
-                icon={<TrendingUp color={trendPct >= 0 ? colors.success : "#DC2626"} size={20} />}
+                icon={<TrendingUp color={trendPct >= 0 ? c.success : "#DC2626"} size={20} />}
                 label="Weekly trend"
                 value={`${trendPct >= 0 ? "+" : ""}${trendPct}%`}
               />

@@ -3,7 +3,7 @@ import { Text, View } from "react-native";
 import Svg, { G, Rect, Text as SvgText } from "react-native-svg";
 
 import type { WorkoutDay } from "@/services/logs";
-import { colors } from "@/constants/theme";
+import { useColors } from "@/hooks/useColors";
 
 const CHART_HEIGHT = 140;
 const BAR_WIDTH = 12;
@@ -22,6 +22,7 @@ type Props = {
 };
 
 export function WorkoutChart({ data }: Props) {
+  const c = useColors();
   const { activityColors, maxScore, chartWidth } = useMemo(() => {
     const names = new Set<string>();
     let mx = 0;
@@ -45,8 +46,8 @@ export function WorkoutChart({ data }: Props) {
 
   if (!data || data.length === 0) {
     return (
-      <View className="items-center rounded-md border border-line bg-white p-5">
-        <Text className="text-[13px] text-muted">No workout history yet.</Text>
+      <View className="items-center rounded-md border p-5" style={{ borderColor: c.line, backgroundColor: c.surface }}>
+        <Text className="text-[13px]" style={{ color: c.muted }}>No workout history yet.</Text>
       </View>
     );
   }
@@ -76,7 +77,7 @@ export function WorkoutChart({ data }: Props) {
           y={y}
           width={BAR_WIDTH}
           height={Math.max(h, a.score > 0 ? 2 : 0)}
-          fill={activityColors[a.name] ?? colors.muted}
+            fill={activityColors[a.name] ?? c.muted}
           rx={2}
         />,
       );
@@ -88,7 +89,7 @@ export function WorkoutChart({ data }: Props) {
         x={barX + BAR_WIDTH / 2}
         y={CHART_HEIGHT + 14}
         fontSize={10}
-        fill={colors.muted}
+        fill={c.muted}
         textAnchor="middle"
       >
         {dayLabels[di]}
@@ -109,8 +110,8 @@ export function WorkoutChart({ data }: Props) {
   }
 
   return (
-    <View className="rounded-md border border-line bg-white p-4">
-      <Text className="mb-3 text-[13px] font-semibold text-muted">Workout points</Text>
+    <View className="rounded-md border p-4" style={{ borderColor: c.line, backgroundColor: c.surface }}>
+      <Text className="mb-3 text-[13px] font-semibold" style={{ color: c.muted }}>Workout points</Text>
 
       <Svg height={CHART_HEIGHT + LABEL_HEIGHT + 8} width={chartWidth}>
         <G>{bars}</G>
@@ -121,7 +122,7 @@ export function WorkoutChart({ data }: Props) {
           {Object.entries(activityColors).map(([name, color]) => (
             <View key={name} className="flex-row items-center gap-1">
               <View className="h-2.5 w-2.5 rounded-sm" style={{ backgroundColor: color }} />
-              <Text className="text-[11px] text-muted">{name}</Text>
+              <Text className="text-[11px]" style={{ color: c.muted }}>{name}</Text>
             </View>
           ))}
         </View>

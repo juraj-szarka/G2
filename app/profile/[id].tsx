@@ -6,11 +6,12 @@ import { ArrowLeft, ShieldCheck } from "lucide-react-native";
 import { MetricCard } from "@/components/MetricCard";
 import { PrimaryButton } from "@/components/PrimaryButton";
 import { Screen } from "@/components/Screen";
-import { colors } from "@/constants/theme";
+import { useColors } from "@/hooks/useColors";
 import { loadProfile } from "@/services/friends";
 import type { Profile } from "@/types/database";
 
 export default function ProfileScreen() {
+  const c = useColors();
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const [profile, setProfile] = useState<Profile | null>(null);
@@ -28,8 +29,8 @@ export default function ProfileScreen() {
 
   if (!profile && !error) {
     return (
-      <View className="flex-1 items-center justify-center bg-paper">
-        <ActivityIndicator color={colors.success} />
+      <View className="flex-1 items-center justify-center" style={{ backgroundColor: c.paper }}>
+        <ActivityIndicator color={c.success} />
       </View>
     );
   }
@@ -38,7 +39,7 @@ export default function ProfileScreen() {
     <Screen
       action={
         <PrimaryButton
-          icon={<ArrowLeft color="#111812" size={18} />}
+          icon={<ArrowLeft color={c.ink} size={18} />}
           label="Back"
           onPress={() => router.back()}
           variant="quiet"
@@ -51,14 +52,14 @@ export default function ProfileScreen() {
         <Text className="text-[14px] font-medium text-red-700">{error}</Text>
       ) : (
         <View className="gap-4">
-          <View className="rounded-md border border-line bg-white p-5">
+          <View className="rounded-md border p-5" style={{ borderColor: c.line, backgroundColor: c.surface }}>
             <View className="flex-row items-center gap-2">
-              <ShieldCheck color={colors.success} size={20} />
-              <Text className="text-[14px] font-semibold text-ink">
+              <ShieldCheck color={c.success} size={20} />
+              <Text className="text-[14px] font-semibold" style={{ color: c.ink }}>
                 {profile?.share_metrics ? "Metrics shared with friends" : "Metrics private"}
               </Text>
             </View>
-            {profile?.bio ? <Text className="mt-3 text-[14px] leading-5 text-muted">{profile.bio}</Text> : null}
+            {profile?.bio ? <Text className="mt-3 text-[14px] leading-5" style={{ color: c.muted }}>{profile.bio}</Text> : null}
           </View>
 
           <View className="flex-row gap-3">

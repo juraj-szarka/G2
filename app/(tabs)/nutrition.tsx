@@ -7,12 +7,13 @@ import { Camera, ChevronRight, ImagePlus, Utensils } from "lucide-react-native";
 import { MetricCard } from "@/components/MetricCard";
 import { PrimaryButton } from "@/components/PrimaryButton";
 import { Screen } from "@/components/Screen";
-import { colors } from "@/constants/theme";
+import { useColors } from "@/hooks/useColors";
 import { listTodayNutrition } from "@/services/logs";
 import { analyzeAndSaveMeal } from "@/services/nutrition";
 import type { NutritionLog } from "@/types/database";
 
 export default function NutritionScreen() {
+  const c = useColors();
   const [logs, setLogs] = useState<NutritionLog[]>([]);
   const [previewUri, setPreviewUri] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -99,7 +100,7 @@ export default function NutritionScreen() {
           <MetricCard
             accent
             detail="Estimated today"
-            icon={<ImagePlus color={colors.success} size={20} />}
+            icon={<ImagePlus color={c.success} size={20} />}
             label="Calories"
             value={Math.round(totals.calories)}
           />
@@ -110,7 +111,7 @@ export default function NutritionScreen() {
           />
         </View>
 
-        <View className="gap-3 rounded-md border border-line bg-white p-5">
+        <View className="gap-3 rounded-md border p-5" style={{ borderColor: c.line, backgroundColor: c.surface }}>
           {previewUri ? <Image className="h-48 w-full rounded-md" resizeMode="cover" source={{ uri: previewUri }} /> : null}
           <PrimaryButton
             icon={<Camera color="white" size={18} />}
@@ -119,7 +120,7 @@ export default function NutritionScreen() {
             onPress={() => pickImage("camera")}
           />
           <PrimaryButton
-            icon={<ImagePlus color="#111812" size={18} />}
+            icon={<ImagePlus color={c.ink} size={18} />}
             label="Choose from library"
             onPress={() => pickImage("library")}
             variant="quiet"
@@ -128,12 +129,12 @@ export default function NutritionScreen() {
 
         <View className="gap-3">
           {logs.map((log) => (
-            <View key={log.id} className="rounded-md border border-line bg-white p-4">
+            <View key={log.id} className="rounded-md border p-4" style={{ borderColor: c.line, backgroundColor: c.surface }}>
               <View className="flex-row items-center justify-between">
-                <Text className="text-[15px] font-semibold text-ink">{log.meal_name ?? "Meal"}</Text>
-                <Text className="text-[15px] font-semibold" style={{ color: colors.success }}>{Math.round(log.calories)} kcal</Text>
+                <Text className="text-[15px] font-semibold" style={{ color: c.ink }}>{log.meal_name ?? "Meal"}</Text>
+                <Text className="text-[15px] font-semibold" style={{ color: c.success }}>{Math.round(log.calories)} kcal</Text>
               </View>
-              <Text className="mt-1 text-[13px] text-muted">
+              <Text className="mt-1 text-[13px]" style={{ color: c.muted }}>
                 {Math.round(log.protein)}g protein / {Math.round(log.carbs)}g carbs / {Math.round(log.fat)}g fat
               </Text>
             </View>
@@ -142,11 +143,11 @@ export default function NutritionScreen() {
 
         {logs.length === 0 && !loading ? (
           <View className="items-center gap-4 py-8">
-            <View className="h-16 w-16 items-center justify-center rounded-full bg-amber-50">
+            <View className="h-16 w-16 items-center justify-center rounded-full" style={{ backgroundColor: "#D97706" + "20" }}>
               <Utensils color="#D97706" size={28} />
             </View>
-            <Text className="text-center text-[15px] font-semibold text-ink">No meals logged yet</Text>
-            <Text className="text-center text-[13px] leading-5 text-muted">
+            <Text className="text-center text-[15px] font-semibold" style={{ color: c.ink }}>No meals logged yet</Text>
+            <Text className="text-center text-[13px] leading-5" style={{ color: c.muted }}>
               Take a photo of your meal or pick one from{'\n'}your library to log macros automatically.
             </Text>
           </View>

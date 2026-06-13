@@ -1,23 +1,25 @@
 import { Tabs } from "expo-router";
 import { Dumbbell, Home, Settings, Users, Utensils } from "lucide-react-native";
 
-import { colors } from "@/constants/theme";
+import { useColors } from "@/hooks/useColors";
 import { useTabBarStore } from "@/store/tabBarStore";
 
 export default function TabsLayout() {
+  const c = useColors();
   const tabAccent = useTabBarStore((s) => s.accentColor);
-  const activeColor = tabAccent || colors.success;
+  const activeColor = tabAccent || c.success;
 
   return (
     <Tabs
       screenOptions={{
         headerShown: false,
         tabBarActiveTintColor: activeColor,
-        tabBarInactiveTintColor: tabAccent ? activeColor + "99" : colors.muted,
+        tabBarInactiveTintColor: tabAccent ? activeColor + "99" : c.muted,
         tabBarStyle: {
           borderTopWidth: tabAccent ? 2.5 : 1,
           borderTopColor: activeColor,
-          backgroundColor: "#FFFFFF"
+          backgroundColor: c.surface,
+          borderBottomColor: c.line,
         },
         tabBarLabelStyle: {
           fontSize: 12,

@@ -6,7 +6,7 @@ import * as Linking from "expo-linking";
 import { Check, Copy, Send, Trash2, Users } from "lucide-react-native";
 import QRCode from "react-native-qrcode-svg";
 
-import { colors } from "@/constants/theme";
+import { useColors } from "@/hooks/useColors";
 import { PrimaryButton } from "@/components/PrimaryButton";
 import { Screen } from "@/components/Screen";
 import {
@@ -20,6 +20,7 @@ import type { Friendship, Profile } from "@/types/database";
 import { shortId } from "@/utils/date";
 
 export default function SocialScreen() {
+  const c = useColors();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [friendships, setFriendships] = useState<Friendship[]>([]);
   const [code, setCode] = useState("");
@@ -83,26 +84,26 @@ export default function SocialScreen() {
   return (
     <Screen eyebrow="Friends and sharing" onRefresh={load} refreshing={loading} title="Social">
       <View className="gap-4">
-        <View className="items-center gap-4 rounded-md border border-line bg-white p-5">
+        <View className="items-center gap-4 rounded-md border p-5" style={{ borderColor: c.line, backgroundColor: c.surface }}>
           {profile ? (
             <QRCode
-              backgroundColor="#FFFFFF"
-              color="#111812"
+              backgroundColor={c.surface}
+              color={c.ink}
               size={168}
               value={Linking.createURL(`/friend/${profile.invite_code}`)}
             />
           ) : null}
           <View className="items-center">
-            <Text className="text-[13px] font-medium text-muted">Friend code</Text>
-            <Text className="mt-1 text-[28px] font-semibold tracking-[2px] text-ink">{profile?.invite_code ?? "..."}</Text>
+            <Text className="text-[13px] font-medium" style={{ color: c.muted }}>Friend code</Text>
+            <Text className="mt-1 text-[28px] font-semibold tracking-[2px]" style={{ color: c.ink }}>{profile?.invite_code ?? "..."}</Text>
           </View>
           <PrimaryButton icon={<Copy color="white" size={18} />} label="Copy invite" onPress={copyInvite} />
         </View>
 
-        <View className="gap-3 rounded-md border border-line bg-white p-5">
+        <View className="gap-3 rounded-md border p-5" style={{ borderColor: c.line, backgroundColor: c.surface }}>
           <TextInput
             autoCapitalize="characters"
-            className="h-12 rounded-md border border-line bg-white px-4 text-[16px] text-ink"
+            className="h-12 rounded-md border px-4 text-[16px]" style={{ borderColor: c.line, backgroundColor: c.surface, color: c.ink }}
             onChangeText={setCode}
             placeholder="Enter friend code"
             placeholderTextColor="#8B948F"
@@ -120,11 +121,11 @@ export default function SocialScreen() {
         <View className="gap-3">
           {friendships.length === 0 && !loading ? (
             <View className="items-center gap-4 py-8">
-              <View className="h-16 w-16 items-center justify-center rounded-full bg-blue-50">
+              <View className="h-16 w-16 items-center justify-center rounded-full" style={{ backgroundColor: "#2563EB" + "20" }}>
                 <Users color="#2563EB" size={28} />
               </View>
-              <Text className="text-center text-[15px] font-semibold text-ink">No friends yet</Text>
-              <Text className="text-center text-[13px] leading-5 text-muted">
+              <Text className="text-center text-[15px] font-semibold" style={{ color: c.ink }}>No friends yet</Text>
+              <Text className="text-center text-[13px] leading-5" style={{ color: c.muted }}>
                 Share your invite code or enter a friend's{'\n'}code above to get started.
               </Text>
             </View>
@@ -134,19 +135,19 @@ export default function SocialScreen() {
             const canAccept = friendship.addressee_id === profile?.id && friendship.status === "pending";
 
             return (
-              <View key={friendship.id} className="rounded-md border border-line bg-white p-4">
+              <View key={friendship.id} className="rounded-md border p-4" style={{ borderColor: c.line, backgroundColor: c.surface }}>
                 <View className="flex-row items-center justify-between gap-3">
                   <View className="flex-1">
                     <Link href={`/profile/${otherId}`}>
-                      <Text className="text-[15px] font-semibold text-ink">{shortId(otherId)}</Text>
+                      <Text className="text-[15px] font-semibold" style={{ color: c.ink }}>{shortId(otherId)}</Text>
                     </Link>
-                    <Text className="mt-1 text-[13px] capitalize text-muted">{friendship.status}</Text>
+                    <Text className="mt-1 text-[13px] capitalize" style={{ color: c.muted }}>{friendship.status}</Text>
                   </View>
                   {canAccept ? (
                     <PrimaryButton icon={<Check color="white" size={18} />} label="Accept" onPress={() => accept(friendship)} />
                   ) : (
                     <PrimaryButton
-                      icon={<Trash2 color="#111812" size={18} />}
+                      icon={<Trash2 color={c.ink} size={18} />}
                       label="Remove"
                       onPress={() => remove(friendship)}
                       variant="quiet"
@@ -158,7 +159,7 @@ export default function SocialScreen() {
           })}
         </View>
 
-        {notice ? <Text className="text-[13px] font-medium" style={{ color: colors.success }}>{notice}</Text> : null}
+        {notice ? <Text className="text-[13px] font-medium" style={{ color: c.success }}>{notice}</Text> : null}
       </View>
     </Screen>
   );

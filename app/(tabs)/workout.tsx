@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { Alert, Text, TextInput, TouchableOpacity, View } from "react-native";
 import { router, useFocusEffect } from "expo-router";
 import { ArrowLeft, ChevronRight, Copy, Dumbbell, Minus, Plus, Trash2 } from "lucide-react-native";
@@ -10,7 +10,7 @@ import { ProgressBar } from "@/components/ProgressBar";
 import { Screen } from "@/components/Screen";
 import { WorkoutChart } from "@/components/WorkoutChart";
 import { resolveIcon } from "@/data/activities";
-import { colors } from "@/constants/theme";
+import { useColors } from "@/hooks/useColors";
 import {
   cacheManualWorkouts,
   createManualWorkout,
@@ -29,6 +29,7 @@ import type { ManualWorkout } from "@/types/database";
 import type { WorkoutDay } from "@/services/logs";
 
 export default function WorkoutScreen() {
+  const c = useColors();
   const [workouts, setWorkouts] = useState<ManualWorkout[]>([]);
   const [selected, setSelected] = useState<ManualWorkout | null>(null);
   const setTabAccent = useTabBarStore((s) => s.setAccentColor);
@@ -116,16 +117,18 @@ export default function WorkoutScreen() {
     ]);
   }
 
-  useEffect(() => {
-    if (selected) {
-      setTabAccent(selected.color || colors.success);
-      getActivityHistory(selected.name, 30).then(setActivityHistory).catch(() => {});
-    } else {
-      setTabAccent("");
-      setActivityHistory([]);
-    }
-    return () => setTabAccent("");
-  }, [selected?.id]);
+  useFocusEffect(
+    useCallback(() => {
+      if (selected) {
+        setTabAccent(selected.color || c.success);
+        getActivityHistory(selected.name, 30).then(setActivityHistory).catch(() => {});
+      } else {
+        setTabAccent("");
+        setActivityHistory([]);
+      }
+      return () => { setTabAccent(""); };
+    }, [selected?.id])
+  );
 
   const totalScore = workouts.reduce((sum, w) => {
     return sum + Math.round(w.current_count * w.score_per_unit * 10) / 10;
@@ -137,7 +140,7 @@ export default function WorkoutScreen() {
       : 0;
     const activityScore = Math.round(selected.current_count * selected.score_per_unit * 10) / 10;
     const IconComp = resolveIcon(selected.icon_name);
-    const activityColor = selected.color || colors.success;
+    const activityColor = selected.color || c.success;
     const step = selected.increment_step;
     const quickBtns = [step, step * 5, step * 10].filter((v) => v > 0);
 
@@ -152,23 +155,24 @@ export default function WorkoutScreen() {
           <View className="flex-row items-center gap-3">
             <TouchableOpacity
               activeOpacity={0.7}
-              className="h-10 w-10 items-center justify-center rounded-md bg-[#EEF3EF]"
+              className="h-10 w-10 items-center justify-center rounded-md"
+              style={{ backgroundColor: c.muted + "18" }}
               onPress={() => { setTabAccent(""); setSelected(null); }}
             >
-              <ArrowLeft color={colors.ink} size={20} />
+              <ArrowLeft color={c.ink} size={20} />
             </TouchableOpacity>
             <View className="h-10 w-10 items-center justify-center rounded-md" style={{ backgroundColor: activityColor + "20" }}>
               <IconComp color={activityColor} size={20} />
             </View>
             <View className="flex-1">
-              <Text className="text-[15px] font-semibold text-muted">Back to list</Text>
-              <Text className="text-[12px] text-muted">
+              <Text className="text-[15px] font-semibold" style={{ color: c.muted }}>Back to list</Text>
+              <Text className="text-[12px]" style={{ color: c.muted }}>
                 {selected.score_per_unit} pts / {selected.unit}
               </Text>
             </View>
             <TouchableOpacity
               activeOpacity={0.7}
-              className="h-10 w-10 items-center justify-center rounded-md bg-red-50"
+              className="h-10 w-10 items-center justify-center rounded-md" style={{ backgroundColor: "#DC2626" + "18" }}
               onPress={removeSelected}
             >
               <Trash2 color="#DC2626" size={18} />
@@ -183,7 +187,7 @@ export default function WorkoutScreen() {
             accentColor={activityColor}
           />
 
-          <View className="gap-4 rounded-md border border-line bg-white p-5">
+          <View className="gap-4 rounded-md border p-5" style={{ borderColor: c.line, backgroundColor: c.surface }}>
             <ProgressBar
               barColor={activityColor}
               label="Progress"
@@ -207,7 +211,7 @@ export default function WorkoutScreen() {
             <View className="flex-row gap-3">
               <TextInput
                 ref={inputRef}
-                className="h-12 flex-1 rounded-md border border-line bg-white px-4 text-[16px] text-ink"
+                className="h-12 flex-1 rounded-md border px-4 text-[16px]" style={{ borderColor: c.line, backgroundColor: c.surface, color: c.ink }}
                 keyboardType="number-pad"
                 onChangeText={setCustomAmount}
                 onSubmitEditing={addCustom}
@@ -230,8 +234,8 @@ export default function WorkoutScreen() {
           </View>
 
           {activityHistory.length > 0 ? (
-            <View className="rounded-md border border-line bg-white p-4">
-              <Text className="mb-2 text-[13px] font-semibold text-muted">Last 30 days ({selected.unit})</Text>
+            <View className="rounded-md border p-4" style={{ borderColor: c.line, backgroundColor: c.surface }}>
+              <Text className="mb-2 text-[13px] font-semibold" style={{ color: c.muted }}>Last 30 days ({selected.unit})</Text>
               <Svg height={80} width={activityHistory.length * (histItemW + histGap) + 20}>
                 <G>
                   {activityHistory.map((h, i) => {
@@ -264,10 +268,10 @@ export default function WorkoutScreen() {
   return (
     <Screen eyebrow="Manual tracker" onRefresh={load} refreshing={loading} title="Workout">
       <View className="gap-4">
-        <View className="rounded-md border border-line p-4" style={{ backgroundColor: colors.successSoft }}>
+        <View className="rounded-md border p-4" style={{ borderColor: c.line, backgroundColor: c.successSoft }}>
           <View className="flex-row items-center justify-between">
-            <Text className="text-[13px] text-muted">Today's total</Text>
-            <Text className="text-[22px] font-semibold" style={{ color: colors.success }}>{totalScore} pts</Text>
+            <Text className="text-[13px]" style={{ color: c.muted }}>Today's total</Text>
+            <Text className="text-[22px] font-semibold" style={{ color: c.success }}>{totalScore} pts</Text>
           </View>
         </View>
 
@@ -282,7 +286,7 @@ export default function WorkoutScreen() {
 
         {workouts.length > 0 ? (
           <PrimaryButton
-            icon={<Copy color="#111812" size={16} />}
+            icon={<Copy color={c.ink} size={16} />}
             label="Copy yesterday's activities"
             loading={copying}
             onPress={async () => {
@@ -328,7 +332,8 @@ export default function WorkoutScreen() {
             <TouchableOpacity
               key={w.id}
               activeOpacity={0.7}
-              className="rounded-md border border-line bg-white p-4"
+              className="rounded-md border p-4"
+              style={{ borderColor: c.line, backgroundColor: c.surface }}
               onPress={() => setSelected(w)}
             >
               <View className="flex-row items-center justify-between">
@@ -336,11 +341,11 @@ export default function WorkoutScreen() {
                   <View className="h-8 w-8 items-center justify-center rounded-md" style={{ backgroundColor: activityColor + "20" }}>
                     <IconComp color={activityColor} size={16} />
                   </View>
-                  <Text className="text-[15px] font-semibold text-ink" numberOfLines={1}>{w.name}</Text>
+                  <Text className="text-[15px] font-semibold" style={{ color: c.ink }} numberOfLines={1}>{w.name}</Text>
                 </View>
                 <View className="flex-row items-baseline gap-1">
                   <Text className="text-[22px] font-semibold" style={{ color: activityColor }}>{w.current_count}</Text>
-                  <Text className="text-[13px] text-muted">
+                  <Text className="text-[13px]" style={{ color: c.muted }}>
                     / {w.target_count} {w.unit}
                   </Text>
                 </View>
@@ -364,11 +369,11 @@ export default function WorkoutScreen() {
 
         {workouts.length === 0 && !loading ? (
           <View className="items-center gap-4 py-8">
-            <View className="h-16 w-16 items-center justify-center rounded-full" style={{ backgroundColor: colors.successSoft }}>
-              <Dumbbell color={colors.success} size={28} />
+            <View className="h-16 w-16 items-center justify-center rounded-full" style={{ backgroundColor: c.successSoft }}>
+              <Dumbbell color={c.success} size={28} />
             </View>
-            <Text className="text-center text-[15px] font-semibold text-ink">No activities today</Text>
-            <Text className="text-center text-[13px] leading-5 text-muted">
+            <Text className="text-center text-[15px] font-semibold" style={{ color: c.ink }}>No activities today</Text>
+            <Text className="text-center text-[13px] leading-5" style={{ color: c.muted }}>
               Tap "Add activity" to start tracking push-ups,{'\n'}running, jump rope, or any exercise.
             </Text>
           </View>

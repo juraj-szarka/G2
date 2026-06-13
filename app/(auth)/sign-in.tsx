@@ -4,9 +4,11 @@ import { Redirect } from "expo-router";
 import { LogIn, UserPlus } from "lucide-react-native";
 
 import { PrimaryButton } from "@/components/PrimaryButton";
+import { useColors } from "@/hooks/useColors";
 import { useAuthStore } from "@/store/authStore";
 
 export default function SignInScreen() {
+  const c = useColors();
   const [mode, setMode] = useState<"sign-in" | "sign-up">("sign-in");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -37,11 +39,11 @@ export default function SignInScreen() {
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === "ios" ? "padding" : undefined}
-      className="flex-1 bg-paper px-6"
+      className="flex-1 px-6" style={{ backgroundColor: c.paper }}
     >
       <View className="flex-1 justify-center">
-        <Text className="mb-3 text-[44px] font-semibold text-ink">Gen2</Text>
-        <Text className="mb-10 max-w-[300px] text-[16px] leading-6 text-muted">
+        <Text className="mb-3 text-[44px] font-semibold" style={{ color: c.ink }}>Gen2</Text>
+        <Text className="mb-10 max-w-[300px] text-[16px] leading-6" style={{ color: c.muted }}>
           A quiet daily health system for training, sleep, nutrition, and progress.
         </Text>
 
@@ -49,7 +51,8 @@ export default function SignInScreen() {
           {mode === "sign-up" ? (
             <TextInput
               autoCapitalize="words"
-              className="h-12 rounded-md border border-line bg-white px-4 text-[16px] text-ink"
+              className="h-12 rounded-md border px-4 text-[16px]"
+              style={{ borderColor: c.line, backgroundColor: c.surface, color: c.ink }}
               onChangeText={setDisplayName}
               placeholder="Display name"
               placeholderTextColor="#8B948F"
@@ -59,7 +62,8 @@ export default function SignInScreen() {
           <TextInput
             autoCapitalize="none"
             autoComplete="email"
-            className="h-12 rounded-md border border-line bg-white px-4 text-[16px] text-ink"
+            className="h-12 rounded-md border px-4 text-[16px]"
+            style={{ borderColor: c.line, backgroundColor: c.surface, color: c.ink }}
             keyboardType="email-address"
             onChangeText={setEmail}
             placeholder="Email"
@@ -68,7 +72,8 @@ export default function SignInScreen() {
           />
           <TextInput
             autoComplete="password"
-            className="h-12 rounded-md border border-line bg-white px-4 text-[16px] text-ink"
+            className="h-12 rounded-md border px-4 text-[16px]"
+            style={{ borderColor: c.line, backgroundColor: c.surface, color: c.ink }}
             onChangeText={setPassword}
             placeholder="Password"
             placeholderTextColor="#8B948F"
