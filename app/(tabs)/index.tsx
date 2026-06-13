@@ -1,14 +1,14 @@
-import { useCallback, useState } from "react";
-import { Text, View } from "react-native";
-import { useFocusEffect } from "expo-router";
-import { Activity, Dumbbell, Moon, RefreshCw, Target, Utensils } from "lucide-react-native";
+import { useCallback, useMemo, useState } from "react";
+import { Text, TouchableOpacity, View } from "react-native";
+import { router, useFocusEffect } from "expo-router";
+import { Activity, Dumbbell, Flame, Moon, RefreshCw, Target, TrendingUp, Utensils } from "lucide-react-native";
 
 import { MetricCard } from "@/components/MetricCard";
 import { PrimaryButton } from "@/components/PrimaryButton";
 import { ProgressBar } from "@/components/ProgressBar";
 import { Screen } from "@/components/Screen";
 import { colors } from "@/constants/theme";
-import { listManualWorkouts, loadTodayDailyLog } from "@/services/logs";
+import { getWorkoutWeekComparison, listManualWorkouts, loadTodayDailyLog, loadTodaysWorkoutPoints } from "@/services/logs";
 import { useAuthStore } from "@/store/authStore";
 import { useHealthStore } from "@/store/healthStore";
 import type { DailyLog } from "@/types/database";
@@ -18,7 +18,9 @@ import { formatMinutes } from "@/utils/date";
 export default function DashboardScreen() {
   const [log, setLog] = useState<DailyLog | null>(null);
   const [manualWorkouts, setManualWorkouts] = useState<ManualWorkout[]>([]);
+  const [todaysPoints, setTodaysPoints] = useState(0);
   const [refreshing, setRefreshing] = useState(false);
+  const [weekComp, setWeekComp] = useState<{ thisWeek: number; lastWeek: number } | null>(null);
   const profile = useAuthStore((state) => state.profile);
   const refreshProfile = useAuthStore((state) => state.refreshProfile);
   const syncHealth = useHealthStore((state) => state.syncHealth);
@@ -28,9 +30,16 @@ export default function DashboardScreen() {
   const load = useCallback(async () => {
     setRefreshing(true);
     try {
-      const [data, mw] = await Promise.all([loadTodayDailyLog(), listManualWorkouts()]);
+      const [data, mw, pts, wc] = await Promise.all([
+        loadTodayDailyLog(),
+        listManualWorkouts(),
+        loadTodaysWorkoutPoints(),
+        getWorkoutWeekComparison().catch(() => null),
+      ]);
       setLog(data);
       setManualWorkouts(mw);
+      setTodaysPoints(pts);
+      setWeekComp(wc);
       await refreshProfile();
     } finally {
       setRefreshing(false);
@@ -48,10 +57,13 @@ export default function DashboardScreen() {
     await load();
   }
 
-  const manualScore = log?.manual_workout_points ?? manualWorkouts.reduce(
-    (sum, w) => sum + Math.round(w.current_count * w.score_per_unit * 10) / 10,
-    0,
-  );
+  const manualScore = log?.manual_workout_points ?? todaysPoints;
+  const pointsGoal = profile?.workout_points_goal ?? 10;
+  const streak = profile?.streak_days ?? 0;
+
+  const trendPct = weekComp && weekComp.lastWeek > 0
+    ? Math.round(((weekComp.thisWeek - weekComp.lastWeek) / weekComp.lastWeek) * 100)
+    : null;
 
   const workoutMinutes = log?.workout_minutes ?? 0;
   const workoutTarget = log?.workout_target_minutes ?? profile?.target_workout_minutes ?? 45;
@@ -93,17 +105,22 @@ export default function DashboardScreen() {
           />
         </View>
 
-        {manualScore > 0 ? (
-          <MetricCard
-            detail="Included in health score"
-            icon={<Dumbbell color={colors.success} size={20} />}
-            label="Workout points"
-            value={manualScore}
-          />
-        ) : null}
+        <TouchableOpacity
+          activeOpacity={0.7}
+          onPress={() => router.navigate("/workout")}
+        >
+          <View className="overflow-hidden rounded-md" style={{ backgroundColor: colors.successSoft }}>
+            <MetricCard
+              detail={`Goal: ${pointsGoal} pts · Included in health score`}
+              icon={<Dumbbell color={colors.success} size={20} />}
+              label="Workout points"
+              value={`${manualScore} / ${pointsGoal}`}
+            />
+          </View>
+        </TouchableOpacity>
 
         <View className="gap-5 rounded-md border border-line bg-white p-5">
-          <ProgressBar label="Workout" target={workoutTarget} unit="m" value={workoutMinutes} />
+          <ProgressBar label="Workout points" target={pointsGoal} value={manualScore} />
           <ProgressBar label="Sleep" target={sleepTarget} unit="m" value={sleepMinutes} />
           <ProgressBar label="Calories" target={caloriesTarget} value={calories} />
         </View>
@@ -123,9 +140,29 @@ export default function DashboardScreen() {
           />
         </View>
 
+        <View className="flex-row gap-3">
+          <View className="flex-1">
+            <MetricCard
+              detail="Consecutive days"
+              icon={<Flame color="#EA580C" size={20} />}
+              label="Streak"
+              value={`${streak} ${streak === 1 ? "day" : "days"}`}
+            />
+          </View>
+          {trendPct !== null ? (
+            <View className="flex-1">
+              <MetricCard
+                detail={trendPct >= 0 ? "vs last week" : "vs last week"}
+                icon={<TrendingUp color={trendPct >= 0 ? colors.success : "#DC2626"} size={20} />}
+                label="Weekly trend"
+                value={`${trendPct >= 0 ? "+" : ""}${trendPct}%`}
+              />
+            </View>
+          ) : null}
+        </View>
+
         {healthError ? <Text className="text-[13px] font-medium text-red-700">{healthError}</Text> : null}
       </View>
     </Screen>
   );
 }
-

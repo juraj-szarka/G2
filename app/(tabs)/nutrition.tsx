@@ -1,8 +1,8 @@
 import { useCallback, useState } from "react";
 import { Image, Text, View } from "react-native";
-import { useFocusEffect } from "expo-router";
+import { router, useFocusEffect } from "expo-router";
 import * as ImagePicker from "expo-image-picker";
-import { Camera, ImagePlus } from "lucide-react-native";
+import { Camera, ChevronRight, ImagePlus, Utensils } from "lucide-react-native";
 
 import { MetricCard } from "@/components/MetricCard";
 import { PrimaryButton } from "@/components/PrimaryButton";
@@ -131,7 +131,7 @@ export default function NutritionScreen() {
             <View key={log.id} className="rounded-md border border-line bg-white p-4">
               <View className="flex-row items-center justify-between">
                 <Text className="text-[15px] font-semibold text-ink">{log.meal_name ?? "Meal"}</Text>
-                <Text className="text-[15px] font-semibold text-emerald-700">{Math.round(log.calories)} kcal</Text>
+                <Text className="text-[15px] font-semibold" style={{ color: colors.success }}>{Math.round(log.calories)} kcal</Text>
               </View>
               <Text className="mt-1 text-[13px] text-muted">
                 {Math.round(log.protein)}g protein / {Math.round(log.carbs)}g carbs / {Math.round(log.fat)}g fat
@@ -139,6 +139,27 @@ export default function NutritionScreen() {
             </View>
           ))}
         </View>
+
+        {logs.length === 0 && !loading ? (
+          <View className="items-center gap-4 py-8">
+            <View className="h-16 w-16 items-center justify-center rounded-full bg-amber-50">
+              <Utensils color="#D97706" size={28} />
+            </View>
+            <Text className="text-center text-[15px] font-semibold text-ink">No meals logged yet</Text>
+            <Text className="text-center text-[13px] leading-5 text-muted">
+              Take a photo of your meal or pick one from{'\n'}your library to log macros automatically.
+            </Text>
+          </View>
+        ) : null}
+
+        {logs.length > 0 ? (
+          <PrimaryButton
+            icon={<ChevronRight color="white" size={16} />}
+            label="Meal history"
+            onPress={() => (router as any).navigate("/meal-history")}
+            variant="outline"
+          />
+        ) : null}
 
         {error ? <Text className="text-[13px] font-medium text-red-700">{error}</Text> : null}
       </View>

@@ -4,7 +4,7 @@ export const colors = {
   paper: "#F7FAF7",
   surface: "#FFFFFF",
   line: "#E4EBE5",
-  success: "#059669",
-  successSoft: "#D1FAE5"
+  success: "#00CC00",
+  successSoft: "#B3FFB3"
 };
 

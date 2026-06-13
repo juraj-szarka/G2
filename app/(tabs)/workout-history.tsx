@@ -1,8 +1,8 @@
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import { ScrollView, Text, TouchableOpacity, View } from "react-native";
 import { useFocusEffect } from "expo-router";
 import { router } from "expo-router";
-import { ArrowLeft } from "lucide-react-native";
+import { ArrowLeft, ChevronLeft, ChevronRight, TrendingUp } from "lucide-react-native";
 import Svg, { G, Line, Rect, Text as SvgText } from "react-native-svg";
 
 import { colors } from "@/constants/theme";
@@ -18,32 +18,59 @@ const palette = [
 ];
 
 const CHART_HEIGHT = 200;
-const ITEM_W = 32;
-const GAP = 6;
-const Y_LABEL_W = 32;
+const ITEM_WIDE = 32;
+const ITEM_COMPACT = 8;
+const GAP_WIDE = 6;
+const GAP_COMPACT = 2;
+const Y_LABEL_W = 28;
 const PAD_TOP = 8;
 const Y_TICK_COUNT = 4;
 
 export default function WorkoutHistoryScreen() {
   const profile = useAuthStore((state) => state.profile);
   const [history, setHistory] = useState<WorkoutDay[]>([]);
-  const [days, setDays] = useState(7);
+  const [days, setDays] = useState(30);
+  const [offset, setOffset] = useState(0);
   const [selectedDay, setSelectedDay] = useState<string | null>(null);
+  const [filterActivity, setFilterActivity] = useState<string | null>(null);
+  const scrollRef = useRef<ScrollView>(null);
 
   const load = useCallback(async () => {
     try {
-      setHistory(await getWorkoutHistory(days));
+      const totalDays = days + offset;
+      setHistory(await getWorkoutHistory(totalDays));
+      setSelectedDay(null);
     } catch {}
-  }, [days]);
+  }, [days, offset]);
 
   useFocusEffect(useCallback(() => { load(); }, [load]));
 
   const goal = profile?.workout_points_goal ?? 10;
 
+  const visibleHistory = useMemo(() => {
+    if (history.length <= days) return history;
+    return history.slice(0, days);
+  }, [history, days]);
+
+  const filteredHistory = useMemo(() => {
+    if (!filterActivity) return visibleHistory;
+    return visibleHistory.map((day) => ({
+      ...day,
+      activities: day.activities.filter((a) => a.name === filterActivity),
+      totalScore: day.activities
+        .filter((a) => a.name === filterActivity)
+        .reduce((s, a) => s + a.score, 0),
+    }));
+  }, [visibleHistory, filterActivity]);
+
+  const isCompact = days > 7;
+  const ITEM_W = isCompact ? ITEM_COMPACT : ITEM_WIDE;
+  const GAP = isCompact ? GAP_COMPACT : GAP_WIDE;
+
   const { chartWidth, maxScore, activityColors, yLabels, labelInterval } = useMemo(() => {
     const names = new Set<string>();
     let mx = 0;
-    for (const day of history) {
+    for (const day of filteredHistory) {
       let total = 0;
       for (const a of day.activities) {
         names.add(a.name);
@@ -58,19 +85,23 @@ export default function WorkoutHistoryScreen() {
       ac[n] = palette[ci % palette.length];
       ci++;
     }
-    const w = history.length * (ITEM_W + GAP) + 20;
+    const w = filteredHistory.length * (ITEM_W + GAP) + 20;
     const yLabels = Array.from({ length: Y_TICK_COUNT }, (_, i) =>
       Math.round((roundedMax * (i + 1)) / Y_TICK_COUNT)
     );
-    const labelInterval = days <= 7 ? 1 : Math.ceil(days / 7);
+    const labelInterval = isCompact ? Math.ceil(days / 6) : 1;
     return { chartWidth: Math.max(w, 200), maxScore: Math.max(roundedMax, 1), activityColors: ac, yLabels, labelInterval };
-  }, [history, goal, days]);
+  }, [filteredHistory, goal, days, isCompact, ITEM_W, GAP]);
 
   const barH = (s: number) => (s / maxScore) * (CHART_HEIGHT - PAD_TOP);
 
-  const selectedData = selectedDay
-    ? history.find((d) => d.date === selectedDay)
-    : null;
+  const firstDate = filteredHistory.length > 0 ? filteredHistory[0].date : null;
+  const lastDate = filteredHistory.length > 0 ? filteredHistory[filteredHistory.length - 1].date : null;
+
+  function shiftWindow(dir: number) {
+    const newOffset = Math.max(0, offset + dir * days);
+    setOffset(newOffset);
+  }
 
   return (
     <SafeAreaView className="flex-1 bg-paper" edges={["top"]}>
@@ -79,7 +110,7 @@ export default function WorkoutHistoryScreen() {
           <TouchableOpacity
             activeOpacity={0.7}
             className="h-10 w-10 items-center justify-center rounded-md bg-[#EEF3EF]"
-            onPress={() => router.back()}
+            onPress={() => router.navigate("/workout")}
           >
             <ArrowLeft color={colors.ink} size={20} />
           </TouchableOpacity>
@@ -87,7 +118,7 @@ export default function WorkoutHistoryScreen() {
         </View>
       </View>
 
-      <ScrollView className="flex-1 px-5">
+      <ScrollView className="flex-1 px-5" ref={scrollRef}>
         <View className="mb-4 rounded-md border border-line bg-white p-4">
           <Text className="mb-3 text-[13px] font-semibold text-muted">
             Points per day (tap a bar for details)
@@ -161,16 +192,16 @@ export default function WorkoutHistoryScreen() {
                   </G>
                 )}
 
-                {history.map((day, di) => {
+                {filteredHistory.map((day, di) => {
                   const x = Y_LABEL_W + di * (ITEM_W + GAP);
                   let accum = 0;
                   const isSelected = day.date === selectedDay;
-                  const showLabel = di % labelInterval === 0 || di === history.length - 1;
+                  const showLabel = di % labelInterval === 0 || di === filteredHistory.length - 1;
 
                   const date = new Date(day.date + "T12:00:00");
-                  const label = days <= 7
-                    ? date.toLocaleDateString("en-US", { weekday: "short" })
-                    : date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+                  const label = isCompact
+                    ? date.toLocaleDateString("en-US", { month: "short", day: "numeric" })
+                    : date.toLocaleDateString("en-US", { weekday: "short" });
 
                   return (
                     <G key={day.date}>
@@ -200,7 +231,7 @@ export default function WorkoutHistoryScreen() {
                         <SvgText
                           x={x + ITEM_W / 2}
                           y={CHART_HEIGHT + 14}
-                          fontSize={10}
+                          fontSize={isCompact ? 7 : 10}
                           fill={isSelected ? colors.ink : colors.muted}
                           textAnchor="middle"
                           fontWeight={isSelected ? "bold" : "normal"}
@@ -224,66 +255,131 @@ export default function WorkoutHistoryScreen() {
             </Svg>
           </ScrollView>
 
-          {activityColors && Object.keys(activityColors).length > 1 ? (
+          {Object.keys(activityColors).length > 0 ? (
             <View className="mt-6 flex-row flex-wrap gap-x-3 gap-y-1">
-              {Object.entries(activityColors).map(([name, color]) => (
-                <View key={name} className="flex-row items-center gap-1">
-                  <View className="h-2.5 w-2.5 rounded-sm" style={{ backgroundColor: color }} />
-                  <Text className="text-[11px] text-muted">{name}</Text>
-                </View>
-              ))}
+              {Object.entries(activityColors).map(([name, color]) => {
+                const isActive = !filterActivity || filterActivity === name;
+                return (
+                  <TouchableOpacity
+                    key={name}
+                    activeOpacity={0.7}
+                    className={`flex-row items-center gap-1 rounded-md px-2 py-1 ${isActive ? "" : "opacity-40"}`}
+                    onPress={() => setFilterActivity(filterActivity === name ? null : name)}
+                  >
+                    <View className="h-2.5 w-2.5 rounded-sm" style={{ backgroundColor: color }} />
+                    <Text className="text-[11px] text-muted">{name}</Text>
+                  </TouchableOpacity>
+                );
+              })}
+                  {filterActivity ? (
+                <TouchableOpacity activeOpacity={0.7} onPress={() => setFilterActivity(null)}>
+                  <Text className="text-[11px] font-medium" style={{ color: colors.success }}>Clear filter</Text>
+                </TouchableOpacity>
+              ) : null}
             </View>
           ) : null}
         </View>
 
-        {selectedData ? (
-          <View className="mb-4 rounded-md border border-line bg-white p-4">
-            <Text className="mb-2 text-[15px] font-semibold text-ink">
-              {new Date(selectedData.date + "T12:00:00").toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })}
-            </Text>
-            <View className="gap-3">
-              {selectedData.activities.map((a) => (
-                <View key={a.name} className="flex-row items-center justify-between border-b border-line pb-2">
-                  <View className="flex-row items-center gap-2">
-                    <View className="h-3 w-3 rounded-sm" style={{ backgroundColor: activityColors[a.name] ?? "#ccc" }} />
-                    <Text className="text-[14px] text-ink">{a.name}</Text>
-                  </View>
-                  <View className="items-end">
-                    <Text className="text-[14px] font-semibold text-ink">
-                      {a.count} {a.unit}
-                    </Text>
-                    <Text className="text-[12px] text-emerald-600">{a.score} pts</Text>
-                  </View>
-                </View>
-              ))}
+        {filteredHistory.length > 0 ? (
+          <View className="mb-4 flex-row gap-3">
+            <View className="flex-1 rounded-md border border-line bg-white p-3">
+              <Text className="text-[11px] font-medium text-muted">{days}-day total</Text>
+              <Text className="text-[20px] font-semibold" style={{ color: colors.success }}>
+                {filteredHistory.reduce((s, d) => s + d.totalScore, 0)} pts
+              </Text>
             </View>
-            <View className="mt-2 flex-row items-center justify-between">
-              <Text className="text-[13px] font-semibold text-muted">Total</Text>
-              <Text className="text-[18px] font-semibold text-emerald-700">{selectedData.totalScore} pts</Text>
+            <View className="flex-1 rounded-md border border-line bg-white p-3">
+              <Text className="text-[11px] font-medium text-muted">Daily avg</Text>
+              <View className="flex-row items-center gap-1">
+                <TrendingUp color={colors.success} size={14} />
+                <Text className="text-[20px] font-semibold" style={{ color: colors.success }}>
+                  {Math.round((filteredHistory.reduce((s, d) => s + d.totalScore, 0) / filteredHistory.length) * 10) / 10}
+                </Text>
+              </View>
             </View>
           </View>
         ) : null}
 
-        <View className="mb-8 flex-row items-center justify-center gap-3">
+        {selectedDay ? (() => {
+          const day = filteredHistory.find((d) => d.date === selectedDay);
+          if (!day) return null;
+          return (
+            <View className="mb-4 rounded-md border border-line bg-white p-4">
+              <Text className="mb-2 text-[15px] font-semibold text-ink">
+                {new Date(day.date + "T12:00:00").toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })}
+              </Text>
+              <View className="gap-3">
+                {day.activities.map((a) => (
+                  <View key={a.name} className="flex-row items-center justify-between border-b border-line pb-2">
+                    <View className="flex-row items-center gap-2">
+                      <View className="h-3 w-3 rounded-sm" style={{ backgroundColor: activityColors[a.name] ?? "#ccc" }} />
+                      <Text className="text-[14px] text-ink">{a.name}</Text>
+                    </View>
+                    <View className="items-end">
+                      <Text className="text-[14px] font-semibold text-ink">
+                        {a.count} {a.unit}
+                      </Text>
+                      <Text className="text-[12px]" style={{ color: colors.success }}>{a.score} pts</Text>
+                    </View>
+                  </View>
+                ))}
+              </View>
+              <View className="mt-2 flex-row items-center justify-between">
+                <Text className="text-[13px] font-semibold text-muted">Total</Text>
+                <Text className="text-[18px] font-semibold" style={{ color: colors.success }}>{day.totalScore} pts</Text>
+              </View>
+            </View>
+          );
+        })() : null}
+
+        <View className="mb-8 flex-row items-center justify-center gap-4">
           <TouchableOpacity
             activeOpacity={0.7}
-            className={`rounded-md px-5 py-2.5 ${days === 7 ? "bg-emerald-600" : "bg-[#EEF3EF]"}`}
-            onPress={() => { setDays(7); setSelectedDay(null); }}
+            className="h-10 w-10 items-center justify-center rounded-md bg-[#EEF3EF]"
+            onPress={() => shiftWindow(-1)}
           >
-            <Text className={`text-[13px] font-semibold ${days === 7 ? "text-white" : "text-muted"}`}>
-              Past 7 days
-            </Text>
+            <ChevronLeft color={colors.ink} size={20} />
           </TouchableOpacity>
+
+          <View className="flex-row gap-2">
+            <TouchableOpacity
+              activeOpacity={0.7}
+              className="rounded-md px-4 py-2"
+              style={{ backgroundColor: days === 7 ? colors.success : "#EEF3EF" }}
+              onPress={() => { setDays(7); setOffset(0); }}
+            >
+              <Text className="text-[13px] font-semibold" style={{ color: days === 7 ? "#FFFFFF" : colors.muted }}>
+                7 days
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              activeOpacity={0.7}
+              className="rounded-md px-4 py-2"
+              style={{ backgroundColor: days === 30 ? colors.success : "#EEF3EF" }}
+              onPress={() => { setDays(30); setOffset(0); }}
+            >
+              <Text className="text-[13px] font-semibold" style={{ color: days === 30 ? "#FFFFFF" : colors.muted }}>
+                30 days
+              </Text>
+            </TouchableOpacity>
+          </View>
+
           <TouchableOpacity
             activeOpacity={0.7}
-            className={`rounded-md px-5 py-2.5 ${days === 30 ? "bg-emerald-600" : "bg-[#EEF3EF]"}`}
-            onPress={() => { setDays(30); setSelectedDay(null); }}
+            className="h-10 w-10 items-center justify-center rounded-md bg-[#EEF3EF]"
+            onPress={() => shiftWindow(1)}
           >
-            <Text className={`text-[13px] font-semibold ${days === 30 ? "text-white" : "text-muted"}`}>
-              Past month
-            </Text>
+            <ChevronRight color={colors.ink} size={20} />
           </TouchableOpacity>
         </View>
+
+        {firstDate && lastDate ? (
+          <Text className="mb-8 text-center text-[12px] text-muted">
+            {new Date(firstDate + "T12:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+            {" — "}
+            {new Date(lastDate + "T12:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric", year: lastDate?.slice(0, 4) !== firstDate?.slice(0, 4) ? "numeric" : undefined })}
+          </Text>
+        ) : null}
       </ScrollView>
     </SafeAreaView>
   );

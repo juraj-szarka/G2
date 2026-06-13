@@ -2,16 +2,21 @@ import { Tabs } from "expo-router";
 import { Dumbbell, Home, Settings, Users, Utensils } from "lucide-react-native";
 
 import { colors } from "@/constants/theme";
+import { useTabBarStore } from "@/store/tabBarStore";
 
 export default function TabsLayout() {
+  const tabAccent = useTabBarStore((s) => s.accentColor);
+  const activeColor = tabAccent || colors.success;
+
   return (
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: colors.success,
-        tabBarInactiveTintColor: colors.muted,
+        tabBarActiveTintColor: activeColor,
+        tabBarInactiveTintColor: tabAccent ? activeColor + "99" : colors.muted,
         tabBarStyle: {
-          borderTopColor: colors.line,
+          borderTopWidth: tabAccent ? 2.5 : 1,
+          borderTopColor: activeColor,
           backgroundColor: "#FFFFFF"
         },
         tabBarLabelStyle: {
@@ -67,6 +72,20 @@ export default function TabsLayout() {
         options={{
           title: "Settings",
           tabBarIcon: ({ color, size }) => <Settings color={color} size={size} />
+        }}
+      />
+      <Tabs.Screen
+        name="edit-workouts"
+        options={{
+          href: null,
+          title: "Edit workouts"
+        }}
+      />
+      <Tabs.Screen
+        name="meal-history"
+        options={{
+          href: null,
+          title: "Meal history"
         }}
       />
     </Tabs>

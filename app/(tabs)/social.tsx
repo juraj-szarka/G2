@@ -3,9 +3,10 @@ import { Text, TextInput, View } from "react-native";
 import { Link, useFocusEffect } from "expo-router";
 import * as Clipboard from "expo-clipboard";
 import * as Linking from "expo-linking";
-import { Check, Copy, Send, Trash2 } from "lucide-react-native";
+import { Check, Copy, Send, Trash2, Users } from "lucide-react-native";
 import QRCode from "react-native-qrcode-svg";
 
+import { colors } from "@/constants/theme";
 import { PrimaryButton } from "@/components/PrimaryButton";
 import { Screen } from "@/components/Screen";
 import {
@@ -117,6 +118,17 @@ export default function SocialScreen() {
         </View>
 
         <View className="gap-3">
+          {friendships.length === 0 && !loading ? (
+            <View className="items-center gap-4 py-8">
+              <View className="h-16 w-16 items-center justify-center rounded-full bg-blue-50">
+                <Users color="#2563EB" size={28} />
+              </View>
+              <Text className="text-center text-[15px] font-semibold text-ink">No friends yet</Text>
+              <Text className="text-center text-[13px] leading-5 text-muted">
+                Share your invite code or enter a friend's{'\n'}code above to get started.
+              </Text>
+            </View>
+          ) : null}
           {friendships.map((friendship) => {
             const otherId = friendship.requester_id === profile?.id ? friendship.addressee_id : friendship.requester_id;
             const canAccept = friendship.addressee_id === profile?.id && friendship.status === "pending";
@@ -146,7 +158,7 @@ export default function SocialScreen() {
           })}
         </View>
 
-        {notice ? <Text className="text-[13px] font-medium text-emerald-700">{notice}</Text> : null}
+        {notice ? <Text className="text-[13px] font-medium" style={{ color: colors.success }}>{notice}</Text> : null}
       </View>
     </Screen>
   );

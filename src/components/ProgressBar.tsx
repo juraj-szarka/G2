@@ -1,14 +1,17 @@
 import type { DimensionValue } from "react-native";
 import { Text, View } from "react-native";
 
+import { colors } from "@/constants/theme";
+
 type Props = {
   label: string;
   value: number;
   target: number;
   unit?: string;
+  barColor?: string;
 };
 
-export function ProgressBar({ label, value, target, unit = "" }: Props) {
+export function ProgressBar({ label, value, target, unit = "", barColor = colors.success }: Props) {
   const percent = target > 0 ? Math.min(value / target, 1) : 0;
   const width = `${Math.max(percent * 100, value > 0 ? 4 : 0)}%` as DimensionValue;
 
@@ -23,7 +26,7 @@ export function ProgressBar({ label, value, target, unit = "" }: Props) {
         </Text>
       </View>
       <View className="h-2 overflow-hidden rounded-sm bg-[#E8EEE9]">
-        <View className="h-full rounded-sm bg-emerald-600" style={{ width }} />
+        <View className="h-full rounded-sm" style={{ backgroundColor: barColor, width }} />
       </View>
     </View>
   );

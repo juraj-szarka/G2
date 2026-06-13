@@ -1,7 +1,7 @@
 import { useCallback, useState } from "react";
 import { Text, TextInput, TouchableOpacity, View } from "react-native";
 import { useFocusEffect, router } from "expo-router";
-import { LogOut, Target } from "lucide-react-native";
+import { ChevronRight, LogOut, Pencil, Target } from "lucide-react-native";
 
 import { PrimaryButton } from "@/components/PrimaryButton";
 import { Screen } from "@/components/Screen";
@@ -72,6 +72,21 @@ export default function SettingsScreen() {
             </View>
           </View>
         </View>
+
+        <TouchableOpacity
+          activeOpacity={0.7}
+          className="flex-row items-center gap-3 rounded-md border border-line bg-white p-4"
+          onPress={() => router.navigate("/edit-workouts")}
+        >
+          <View className="h-9 w-9 items-center justify-center rounded-md bg-[#EEF3EF]">
+            <Pencil color={colors.ink} size={18} />
+          </View>
+          <View className="flex-1">
+            <Text className="text-[15px] font-semibold text-ink">Edit workouts</Text>
+            <Text className="text-[12px] text-muted">Change icons, colors, or delete workout types</Text>
+          </View>
+          <ChevronRight color={colors.muted} size={18} />
+        </TouchableOpacity>
 
         <TouchableOpacity
           activeOpacity={0.7}
